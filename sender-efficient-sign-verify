@@ -1,0 +1,37 @@
+from sage.all import *
+import hashlib
+
+# Prime and elliptic curve setup
+q = 733
+F = Zmod(q)
+E = EllipticCurve(F, [2, 3])
+G = E.gen(0)  # Generator point of the curve
+
+def hash_func(*args):
+    """ A simple cryptographic hash function that maps inputs to an integer in Fq. """
+    string_input = ''.join(map(str, args))
+    hash_output = hashlib.sha256(string_input.encode()).hexdigest()
+    return ZZ(int(hash_output, 16) % q)
+
+# KEY GENERATION (VEHICLE-USER)
+x = ZZ.random_element(1, q-1)
+Y = x * G
+
+# SIGNATURE GENERATION (VEHICLE-USER)
+a = ZZ.random_element(1, q-1)
+R = a * G
+m = ZZ.random_element(1, 2**20) 
+sigma = a + x * hash_func(m, R)
+
+signature = (m, R, sigma)
+
+# SIGNATURE VERIFICATION (SENDER)
+def verify_signature(signature):
+    m, R_vals, sigma = signature
+    expected = sigma * G
+    return expected == R_vals + Y * hash_func(m, R_vals)
+
+print("Signature valid:", verify_signature(signature))
+
+
+
